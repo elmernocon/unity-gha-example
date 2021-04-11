@@ -1,0 +1,310 @@
+name: Unity Actions
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  PROJECT_PATH: src
+  UNITY_VERSION: 2020.3.1f1
+  TEST_MODE: all
+
+jobs:
+
+  # Checks if certain secrets are available and store the results in the output of this job.
+  check_gh_secrets:
+    name: Check GitHub Secrets
+    runs-on: ubuntu-latest
+    outputs:
+      unity_license_exists: ${{ steps.set_unity_license_exists.outputs.unity_license_exists }}
+      android_keystore_base64_exists: ${{ steps.set_android_keystore_base64_exists.outputs.android_keystore_base64_exists }}
+      android_keystore_pass_exists: ${{ steps.set_android_keystore_pass_exists.outputs.android_keystore_pass_exists }}
+      android_keyalias_name_exists: ${{ steps.set_android_keyalias_name_exists.outputs.android_keyalias_name_exists }}
+      android_keyalias_pass_exists: ${{ steps.set_android_keyalias_pass_exists.outputs.android_keyalias_pass_exists }}
+      gha_dynamic_badges_gist_id_exists: ${{ steps.set_gha_dynamic_badges_gist_id_exists.outputs.gha_dynamic_badges_gist_id_exists }}
+      gha_dynamic_badges_gist_scope_token_exists: ${{ steps.set_gha_dynamic_badges_gist_scope_token_exists.outputs.gha_dynamic_badges_gist_scope_token_exists }}
+    steps:
+      # Sets unity_license_exists to 'true' if 'UNITY_LICENSE' exist in GitHub Secrets.
+      - name: Set 'unity_license_exists' Value
+        id: set_unity_license_exists
+        run: echo "::set-output name=unity_license_exists::${{ secrets.UNITY_LICENSE != '' }}"
+      # Sets android_keystore_base64_exists to 'true' if 'ANDROID_KEYSTORE_BASE64' exist in GitHub Secrets.
+      - name: Set 'android_keystore_base64_exists' Value
+        id: set_android_keystore_base64_exists
+        run: echo "::set-output name=android_keystore_base64_exists::${{ secrets.ANDROID_KEYSTORE_BASE64 != '' }}"
+      # Sets android_keystore_pass_exists to 'true' if 'ANDROID_KEYSTORE_PASS' exist in GitHub Secrets.
+      - name: Set 'android_keystore_pass_exists' Value
+        id: set_android_keystore_pass_exists
+        run: echo "::set-output name=android_keystore_pass_exists::${{ secrets.ANDROID_KEYSTORE_PASS != '' }}"
+      # Sets android_keyalias_name_exists to 'true' if 'ANDROID_KEYALIAS_NAME' exist in GitHub Secrets.
+      - name: Set 'android_keyalias_name_exists' Value
+        id: set_android_keyalias_name_exists
+        run: echo "::set-output name=android_keyalias_name_exists::${{ secrets.ANDROID_KEYALIAS_NAME != '' }}"
+      # Sets android_keyalias_pass_exists to 'true' if 'ANDROID_KEYALIAS_PASS' exist in GitHub Secrets.
+      - name: Set 'android_keyalias_pass_exists' Value
+        id: set_android_keyalias_pass_exists
+        run: echo "::set-output name=android_keyalias_pass_exists::${{ secrets.ANDROID_KEYALIAS_PASS != '' }}"
+      # Sets gha_dynamic_badges_gist_id_exists to 'true' if 'GHA_DYNAMIC_BADGES_GIST_ID' exist in GitHub Secrets.
+      - name: Set 'gha_dynamic_badges_gist_id_exists' Value
+        id: set_gha_dynamic_badges_gist_id_exists
+        run: echo "::set-output name=gha_dynamic_badges_gist_id_exists::${{ secrets.GHA_DYNAMIC_BADGES_GIST_ID != '' }}"
+      # Sets gha_dynamic_badges_gist_scope_token_exists to 'true' if 'GHA_DYNAMIC_BADGES_GIST_SCOPE_TOKEN' exist in GitHub Secrets.
+      - name: Set 'gha_dynamic_badges_gist_scope_token_exists' Value
+        id: set_gha_dynamic_badges_gist_scope_token_exists
+        run: echo "::set-output name=gha_dynamic_badges_gist_scope_token_exists::${{ secrets.GHA_DYNAMIC_BADGES_GIST_SCOPE_TOKEN != '' }}"
+
+  # Checks if certain skip keywords exist in the commits and store the results in the output of this job.
+  check_skip_commits:
+    name: Check Skip Commits
+    runs-on: ubuntu-latest
+    outputs:
+      skip_test: ${{ steps.set_skip_test.outputs.skip_test }}
+      skip_build: ${{ steps.set_skip_build.outputs.skip_build }}
+      skip_android: ${{ steps.set_skip_android.outputs.skip_android }}
+      skip_webgl: ${{ steps.set_skip_webgl.outputs.skip_webgl }}
+    steps:
+      # Sets skip_test to 'true' if any of '[skip test]', '[no test]', '[test skip]' exist in the commits.
+      - name: Set Skip Test
+        id: set_skip_test
+        run: echo "::set-output name=skip_test::${{ !(!contains(toJSON(github.event.commits.*.message), '[skip test]') && !contains(toJSON(github.event.commits.*.message), '[no test]') && !contains(toJSON(github.event.commits.*.message), '[test skip]')) }}"
+      # Sets skip_build to 'true' if any of '[skip build]', '[no build]', '[build skip]' exist in the commits.
+      - name: Set Skip Build
+        id: set_skip_build
+        run: echo "::set-output name=skip_build::${{ !(!contains(toJSON(github.event.commits.*.message), '[skip build]') && !contains(toJSON(github.event.commits.*.message), '[no build]') && !contains(toJSON(github.event.commits.*.message), '[build skip]')) }}"
+      # Sets skip_android to 'true' if any of '[skip android]', '[no android]', '[android skip]' exist in the commits.
+      - name: Set Skip Android
+        id: set_skip_android
+        run: echo "::set-output name=skip_android::${{ !(!contains(toJSON(github.event.commits.*.message), '[skip android]') && !contains(toJSON(github.event.commits.*.message), '[no android]') && !contains(toJSON(github.event.commits.*.message), '[android skip]')) }}"
+      # Sets skip_webgl to 'true' if any of '[skip webgl]', '[no webgl]', '[webgl skip]' exist in the commits.
+      - name: Set Skip Webgl
+        id: set_skip_webgl
+        run: echo "::set-output name=skip_webgl::${{ !(!contains(toJSON(github.event.commits.*.message), '[skip webgl]') && !contains(toJSON(github.event.commits.*.message), '[no webgl]') && !contains(toJSON(github.event.commits.*.message), '[webgl skip]')) }}"
+
+  # Requests the manual activation file for Unity if 'UNITY_LICENSE' is not found in GitHub Secrets.
+  request_unity_activation_file:
+    name: Request Unity Activation File
+    needs: [ check_gh_secrets ]
+    runs-on: ubuntu-latest
+    if: needs.check_gh_secrets.outputs.unity_license_exists != 'true'
+    steps:
+      - name: Attention
+        run: |
+          echo "::group::ATTENTION"
+          echo "It looks like you have not set 'UNITY_LICENSE' in your secrets."
+          echo "Requesting a manual activation file from Unity.."
+          echo "::endgroup::"
+      # GitHub Action for requesting the manual activation file for Unity. Part of the GameCI open source project.
+      - name: Unity - Request Activation File
+        id: unity_request_activation_file
+        uses: game-ci/unity-request-activation-file@v2.0-alpha-1
+        with:
+          unityVersion: ${{ env.UNITY_VERSION }}
+      # This uploads artifacts from your workflow allowing you to share data between jobs and store data once a workflow is complete.
+      - name: Upload Unity_vX.X.X.alf file as Artifact
+        id: upload_artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: ${{ steps.unity_request_activation_file.outputs.filePath }}
+          path: ${{ steps.unity_request_activation_file.outputs.filePath }}
+      - name: Instructions
+        run: |
+          echo "::group::INSTRUCTIONS"
+          echo "Follow these (one-time) steps for setting 'UNITY_LICENSE' in your secret:"
+          echo "  1. Download the manual activation file (Unity_vX.X.X.alf) that now appeared as an artifact."
+          echo "  2. Visit license.unity3d.com and upload it."
+          echo "  3. You should now receive your license file (Unity_vX.X.ulf) as a download."
+          echo "  4. Open GitHub > YOUR_REPOSITORY > Settings > Secrets."
+          echo "  5. Create a secret called 'UNITY_LICENSE' and copy the contents your license file into it."
+          echo "::endgroup::"
+
+  # Runs the Unity Test Runner and uploads the Unity Test Results as an artifact.
+  run_unity_test_runner:
+    name: Run Unity Test Runner
+    needs: [ check_gh_secrets, check_skip_commits ]
+    runs-on: ubuntu-latest
+    if: needs.check_gh_secrets.outputs.unity_license_exists == 'true' && needs.check_skip_commits.outputs.skip_test != 'true'
+    steps:
+      # This action checks-out your repository under $GITHUB_WORKSPACE, so your workflow can access it.
+      - name: Checkout
+        id: checkout
+        uses: actions/checkout@v2.3.4
+        with:
+          lfs: true
+      # This action allows caching dependencies and build outputs to improve workflow execution time.
+      - name: Cache
+        id: cache
+        uses: actions/cache@v2.1.4
+        with:
+          path: ${{ env.PROJECT_PATH }}/Library
+          key: Library-test
+          restore-keys: |
+            Library-
+            Library
+      # GitHub Action to run tests for any Unity project. Part of the GameCI open source project.
+      - name: Unity - Test Runner
+        id: unity_test_runner
+        uses: game-ci/unity-test-runner@v2.0-alpha-4
+        with:
+          projectPath: ${{ env.PROJECT_PATH }}
+          unityVersion: ${{ env.UNITY_VERSION }}
+          testMode: ${{ env.TEST_MODE }}
+          customParameters: -nographics
+          githubToken: ${{ secrets.GITHUB_TOKEN }}
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+      # This uploads artifacts from your workflow allowing you to share data between jobs and store data once a workflow is complete.
+      - name: Upload Unity Test Results as Artifact
+        id: upload_artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: Unity Test Results
+          path: ${{ steps.unity_test_runner.outputs.artifactsPath }}
+
+  # Builds the Unity project with Android as the target platform.
+  build_unity_project_android:
+    name: Build Unity Project (Android)
+    needs: [ check_gh_secrets, check_skip_commits ]
+    runs-on: ubuntu-latest
+    outputs:
+      build_version: ${{ steps.unity_builder.outputs.buildVersion }}
+    if: needs.check_gh_secrets.outputs.unity_license_exists == 'true' && needs.check_skip_commits.outputs.skip_build != 'true' && needs.check_skip_commits.outputs.skip_android != 'true' && needs.check_gh_secrets.outputs.android_keystore_base64_exists == 'true' && needs.check_gh_secrets.outputs.android_keystore_pass_exists == 'true' && needs.check_gh_secrets.outputs.android_keyalias_name_exists == 'true' && needs.check_gh_secrets.outputs.android_keyalias_pass_exists == 'true'
+    steps:
+      # This action checks-out your repository under $GITHUB_WORKSPACE, so your workflow can access it.
+      - name: Checkout
+        id: checkout
+        uses: actions/checkout@v2.3.4
+        with:
+          lfs: true
+      # This action allows caching dependencies and build outputs to improve workflow execution time.
+      - name: Cache
+        id: cache
+        uses: actions/cache@v2.1.4
+        with:
+          path: ${{ env.PROJECT_PATH }}/Library
+          key: Library-Android
+          restore-keys: |
+            Library-
+            Library
+      # GitHub Action to build Unity projects for different platforms. Part of the GameCI open source project.
+      - name: Unity - Builder
+        id: unity_builder
+        uses: game-ci/unity-builder@v2.0-alpha-6
+        with:
+          projectPath: ${{ env.PROJECT_PATH }}
+          unityVersion: ${{ env.UNITY_VERSION }}
+          targetPlatform: Android
+          versioning: Semantic
+          githubToken: ${{ secrets.GITHUB_TOKEN }}
+          androidKeystoreName: user.keystore
+          androidKeystoreBase64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          androidKeystorePass: ${{ secrets.ANDROID_KEYSTORE_PASS }}
+          androidKeyaliasName: ${{ secrets.ANDROID_KEYALIAS_NAME }}
+          androidKeyaliasPass: ${{ secrets.ANDROID_KEYALIAS_PASS }}
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+      # This uploads artifacts from your workflow allowing you to share data between jobs and store data once a workflow is complete.
+      - name: Upload Build as Artifact
+        id: upload_artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: Build-Android-${{ steps.unity_builder.outputs.buildVersion }}
+          path: build
+      # This action allows you to create badges for your README.md with shields.io which may change with every commit.
+      - name: Update Build Status Badge
+        id: update_build_status_badge
+        if: github.event_name == 'push' && needs.check_gh_secrets.outputs.gha_dynamic_badges_gist_id_exists == 'true' && needs.check_gh_secrets.outputs.gha_dynamic_badges_gist_scope_token_exists == 'true' && always()
+        uses: Schneegans/dynamic-badges-action@v1.0.0
+        with:
+          auth: ${{ secrets.GHA_DYNAMIC_BADGES_GIST_SCOPE_TOKEN }}
+          gistID: ${{ secrets.GHA_DYNAMIC_BADGES_GIST_ID }}
+          filename: Android.json
+          label: Android Build
+          message: ${{ steps.unity_builder.conclusion }}
+          color: lightgrey
+          namedLogo: unity
+
+  # Builds the Unity project with WebGL as the target platform.
+  build_unity_project_webgl:
+    name: Build Unity Project (WebGL)
+    needs: [ check_gh_secrets, check_skip_commits ]
+    runs-on: ubuntu-latest
+    outputs:
+      build_version: ${{ steps.unity_builder.outputs.buildVersion }}
+    if: needs.check_gh_secrets.outputs.unity_license_exists == 'true' && needs.check_skip_commits.outputs.skip_build != 'true' && needs.check_skip_commits.outputs.skip_webgl != 'true'
+    steps:
+      # This action checks-out your repository under $GITHUB_WORKSPACE, so your workflow can access it.
+      - name: Checkout
+        id: checkout
+        uses: actions/checkout@v2.3.4
+        with:
+          lfs: true
+      # This action allows caching dependencies and build outputs to improve workflow execution time.
+      - name: Cache
+        id: cache
+        uses: actions/cache@v2.1.4
+        with:
+          path: ${{ env.PROJECT_PATH }}/Library
+          key: Library-WebGL
+          restore-keys: |
+            Library-
+            Library
+      # GitHub Action to build Unity projects for different platforms. Part of the GameCI open source project.
+      - name: Unity - Builder
+        id: unity_builder
+        uses: game-ci/unity-builder@v2.0-alpha-6
+        with:
+          projectPath: ${{ env.PROJECT_PATH }}
+          unityVersion: ${{ env.UNITY_VERSION }}
+          targetPlatform: WebGL
+          versioning: Semantic
+          githubToken: ${{ secrets.GITHUB_TOKEN }}
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+      # This uploads artifacts from your workflow allowing you to share data between jobs and store data once a workflow is complete.
+      - name: Upload Build as Artifact
+        id: upload_artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: Build-WebGL-${{ steps.unity_builder.outputs.buildVersion }}
+          path: build
+      # This action allows you to create badges for your README.md with shields.io which may change with every commit.
+      - name: Update Build Status Badge
+        id: update_build_status_badge
+        if: github.event_name == 'push' && needs.check_gh_secrets.outputs.gha_dynamic_badges_gist_id_exists == 'true' && needs.check_gh_secrets.outputs.gha_dynamic_badges_gist_scope_token_exists == 'true' && always()
+        uses: Schneegans/dynamic-badges-action@v1.0.0
+        with:
+          auth: ${{ secrets.GHA_DYNAMIC_BADGES_GIST_SCOPE_TOKEN }}
+          gistID: ${{ secrets.GHA_DYNAMIC_BADGES_GIST_ID }}
+          filename: WebGL.json
+          label: WebGL Build
+          message: ${{ steps.unity_builder.conclusion }}
+          color: lightgrey
+          namedLogo: unity
+
+  # Deploys the WebGL build into GitHub pages.
+  deploy_build_webgl:
+    name: Deploy Build (WebGL)
+    needs: [ build_unity_project_webgl ]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+    steps:
+      # This downloads artifacts from your build.
+      - name: Download WebGL Artifact
+        id: download_artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: Build-WebGL-${{ needs.build_unity_project_webgl.outputs.build_version }}
+          path: build
+      # This is a GitHub Action to deploy your static files to GitHub Pages.
+      - name: Deploy to GitHub Pages
+        id: deploy_to_gh_pages
+        uses: peaceiris/actions-gh-pages@v3.7.3
+        with:
+          publish_branch: webgl
+          publish_dir: build/WebGL/WebGL
+          force_orphan: true
+          user_name: github-actions[bot]
+          user_email: github-actions[bot]@users.noreply.github.com
+          github_token: ${{ secrets.GITHUB_TOKEN }}
