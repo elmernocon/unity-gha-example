@@ -3,11 +3,12 @@
 [![android build status][android-build-img]][build-url]
 [![webgl build status][webgl-build-img]][build-url]
 
-An example project using GitHub Actions to test :test_tube:, build :hammer:, and deploy :rocket: a Unity project.
+An example project using GitHub Actions to test :test_tube: build :hammer: and deploy :rocket: a Unity project.
 
 ## Points of Interest
 
 * [./.github/workflows/main.yml](./.github/workflows/main.yml)
+* [WebGL Build](https://elmernocon.github.io/unity-gha-example/)
 
 ## GitHub Actions
 
