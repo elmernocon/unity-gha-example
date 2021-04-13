@@ -18,42 +18,24 @@ jobs:
     name: Check GitHub Secrets
     runs-on: ubuntu-latest
     outputs:
-      unity_license_exists: ${{ steps.set_unity_license_exists.outputs.unity_license_exists }}
-      android_keystore_base64_exists: ${{ steps.set_android_keystore_base64_exists.outputs.android_keystore_base64_exists }}
-      android_keystore_pass_exists: ${{ steps.set_android_keystore_pass_exists.outputs.android_keystore_pass_exists }}
-      android_keyalias_name_exists: ${{ steps.set_android_keyalias_name_exists.outputs.android_keyalias_name_exists }}
-      android_keyalias_pass_exists: ${{ steps.set_android_keyalias_pass_exists.outputs.android_keyalias_pass_exists }}
-      gha_dynamic_badges_gist_id_exists: ${{ steps.set_gha_dynamic_badges_gist_id_exists.outputs.gha_dynamic_badges_gist_id_exists }}
-      gha_dynamic_badges_gist_scope_token_exists: ${{ steps.set_gha_dynamic_badges_gist_scope_token_exists.outputs.gha_dynamic_badges_gist_scope_token_exists }}
+      unity_license_exists: ${{ steps.set_secrets_exist_flags.outputs.unity_license_exists }}
+      android_keystore_base64_exists: ${{ steps.set_secrets_exist_flags.outputs.android_keystore_base64_exists }}
+      android_keystore_pass_exists: ${{ steps.set_secrets_exist_flags.outputs.android_keystore_pass_exists }}
+      android_keyalias_name_exists: ${{ steps.set_secrets_exist_flags.outputs.android_keyalias_name_exists }}
+      android_keyalias_pass_exists: ${{ steps.set_secrets_exist_flags.outputs.android_keyalias_pass_exists }}
+      gha_dynamic_badges_gist_id_exists: ${{ steps.set_secrets_exist_flags.outputs.gha_dynamic_badges_gist_id_exists }}
+      gha_dynamic_badges_gist_scope_token_exists: ${{ steps.set_secrets_exist_flags.outputs.gha_dynamic_badges_gist_scope_token_exists }}
     steps:
-      # Sets unity_license_exists to 'true' if 'UNITY_LICENSE' exist in GitHub Secrets.
-      - name: Set 'unity_license_exists' Value
-        id: set_unity_license_exists
-        run: echo "::set-output name=unity_license_exists::${{ secrets.UNITY_LICENSE != '' }}"
-      # Sets android_keystore_base64_exists to 'true' if 'ANDROID_KEYSTORE_BASE64' exist in GitHub Secrets.
-      - name: Set 'android_keystore_base64_exists' Value
-        id: set_android_keystore_base64_exists
-        run: echo "::set-output name=android_keystore_base64_exists::${{ secrets.ANDROID_KEYSTORE_BASE64 != '' }}"
-      # Sets android_keystore_pass_exists to 'true' if 'ANDROID_KEYSTORE_PASS' exist in GitHub Secrets.
-      - name: Set 'android_keystore_pass_exists' Value
-        id: set_android_keystore_pass_exists
-        run: echo "::set-output name=android_keystore_pass_exists::${{ secrets.ANDROID_KEYSTORE_PASS != '' }}"
-      # Sets android_keyalias_name_exists to 'true' if 'ANDROID_KEYALIAS_NAME' exist in GitHub Secrets.
-      - name: Set 'android_keyalias_name_exists' Value
-        id: set_android_keyalias_name_exists
-        run: echo "::set-output name=android_keyalias_name_exists::${{ secrets.ANDROID_KEYALIAS_NAME != '' }}"
-      # Sets android_keyalias_pass_exists to 'true' if 'ANDROID_KEYALIAS_PASS' exist in GitHub Secrets.
-      - name: Set 'android_keyalias_pass_exists' Value
-        id: set_android_keyalias_pass_exists
-        run: echo "::set-output name=android_keyalias_pass_exists::${{ secrets.ANDROID_KEYALIAS_PASS != '' }}"
-      # Sets gha_dynamic_badges_gist_id_exists to 'true' if 'GHA_DYNAMIC_BADGES_GIST_ID' exist in GitHub Secrets.
-      - name: Set 'gha_dynamic_badges_gist_id_exists' Value
-        id: set_gha_dynamic_badges_gist_id_exists
-        run: echo "::set-output name=gha_dynamic_badges_gist_id_exists::${{ secrets.GHA_DYNAMIC_BADGES_GIST_ID != '' }}"
-      # Sets gha_dynamic_badges_gist_scope_token_exists to 'true' if 'GHA_DYNAMIC_BADGES_GIST_SCOPE_TOKEN' exist in GitHub Secrets.
-      - name: Set 'gha_dynamic_badges_gist_scope_token_exists' Value
-        id: set_gha_dynamic_badges_gist_scope_token_exists
-        run: echo "::set-output name=gha_dynamic_badges_gist_scope_token_exists::${{ secrets.GHA_DYNAMIC_BADGES_GIST_SCOPE_TOKEN != '' }}"
+      - name: Set Secrets Exist Flags
+        id: set_secrets_exist_flags
+        run: |
+          echo "::set-output name=unity_license_exists::${{ secrets.UNITY_LICENSE != '' }}"
+          echo "::set-output name=android_keystore_base64_exists::${{ secrets.ANDROID_KEYSTORE_BASE64 != '' }}"
+          echo "::set-output name=android_keystore_pass_exists::${{ secrets.ANDROID_KEYSTORE_PASS != '' }}"
+          echo "::set-output name=android_keyalias_name_exists::${{ secrets.ANDROID_KEYALIAS_NAME != '' }}"
+          echo "::set-output name=android_keyalias_pass_exists::${{ secrets.ANDROID_KEYALIAS_PASS != '' }}"
+          echo "::set-output name=gha_dynamic_badges_gist_id_exists::${{ secrets.GHA_DYNAMIC_BADGES_GIST_ID != '' }}"
+          echo "::set-output name=gha_dynamic_badges_gist_scope_token_exists::${{ secrets.GHA_DYNAMIC_BADGES_GIST_SCOPE_TOKEN != '' }}"
 
   # Checks if certain skip keywords exist in the commits and store the results in the output of this job.
   check_skip_commits:
