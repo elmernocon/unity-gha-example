@@ -60,27 +60,25 @@ jobs:
     name: Check Skip Commits
     runs-on: ubuntu-latest
     outputs:
-      skip_test: ${{ steps.set_skip_test.outputs.skip_test }}
-      skip_build: ${{ steps.set_skip_build.outputs.skip_build }}
-      skip_android: ${{ steps.set_skip_android.outputs.skip_android }}
-      skip_webgl: ${{ steps.set_skip_webgl.outputs.skip_webgl }}
+      skip_test: ${{ steps.set_skip_flags.outputs.skip_test }}
+      skip_build: ${{ steps.set_skip_flags.outputs.skip_build }}
+      skip_android: ${{ steps.set_skip_flags.outputs.skip_android }}
+      skip_webgl: ${{ steps.set_skip_flags.outputs.skip_webgl }}
+    env:
+      COMMITS_JSON: ${{ toJSON(github.event.commits.*.message) }}
     steps:
-      # Sets skip_test to 'true' if any of '[skip test]', '[no test]', '[test skip]' exist in the commits.
-      - name: Set Skip Test
-        id: set_skip_test
-        run: echo "::set-output name=skip_test::${{ !(!contains(toJSON(github.event.commits.*.message), '[skip test]') && !contains(toJSON(github.event.commits.*.message), '[no test]') && !contains(toJSON(github.event.commits.*.message), '[test skip]')) }}"
-      # Sets skip_build to 'true' if any of '[skip build]', '[no build]', '[build skip]' exist in the commits.
-      - name: Set Skip Build
-        id: set_skip_build
-        run: echo "::set-output name=skip_build::${{ !(!contains(toJSON(github.event.commits.*.message), '[skip build]') && !contains(toJSON(github.event.commits.*.message), '[no build]') && !contains(toJSON(github.event.commits.*.message), '[build skip]')) }}"
-      # Sets skip_android to 'true' if any of '[skip android]', '[no android]', '[android skip]' exist in the commits.
-      - name: Set Skip Android
-        id: set_skip_android
-        run: echo "::set-output name=skip_android::${{ !(!contains(toJSON(github.event.commits.*.message), '[skip android]') && !contains(toJSON(github.event.commits.*.message), '[no android]') && !contains(toJSON(github.event.commits.*.message), '[android skip]')) }}"
-      # Sets skip_webgl to 'true' if any of '[skip webgl]', '[no webgl]', '[webgl skip]' exist in the commits.
-      - name: Set Skip Webgl
-        id: set_skip_webgl
-        run: echo "::set-output name=skip_webgl::${{ !(!contains(toJSON(github.event.commits.*.message), '[skip webgl]') && !contains(toJSON(github.event.commits.*.message), '[no webgl]') && !contains(toJSON(github.event.commits.*.message), '[webgl skip]')) }}"
+      - name: Set Skip Flags
+        id: set_skip_flags
+        run: |
+          echo "::set-output name=skip_test::${{ env.SKIP_TEST }}"
+          echo "::set-output name=skip_build::${{ env.SKIP_BUILD }}"
+          echo "::set-output name=skip_android::${{ env.SKIP_ANDROID }}"
+          echo "::set-output name=skip_webgl::${{ env.SKIP_WEBGL }}"
+        env:
+          SKIP_TEST: ${{ contains(env.COMMITS_JSON, '[skip test]') || contains(env.COMMITS_JSON, '[no test]') || contains(env.COMMITS_JSON, '[test skip]') }}
+          SKIP_BUILD: ${{ contains(env.COMMITS_JSON, '[skip build]') || contains(env.COMMITS_JSON, '[no build]') || contains(env.COMMITS_JSON, '[build skip]') }}
+          SKIP_ANDROID: ${{ contains(env.COMMITS_JSON, '[skip android]') || contains(env.COMMITS_JSON, '[no android]') || contains(env.COMMITS_JSON, '[android skip]') }}
+          SKIP_WEBGL: ${{ contains(env.COMMITS_JSON, '[skip webgl]') || contains(env.COMMITS_JSON, '[no webgl]') || contains(env.COMMITS_JSON, '[webgl skip]') }}
 
   # Requests the manual activation file for Unity if 'UNITY_LICENSE' is not found in GitHub Secrets.
   request_unity_activation_file:
