@@ -104,7 +104,9 @@ jobs:
     name: Run Unity Test Runner
     needs: [ check_gh_secrets, check_skip_commits ]
     runs-on: ubuntu-latest
-    if: needs.check_gh_secrets.outputs.unity_license_exists == 'true' && needs.check_skip_commits.outputs.skip_test != 'true'
+    if: |
+      needs.check_gh_secrets.outputs.unity_license_exists == 'true' &&
+      needs.check_skip_commits.outputs.skip_test != 'true'
     steps:
       # This action checks-out your repository under $GITHUB_WORKSPACE, so your workflow can access it.
       - name: Checkout
@@ -149,7 +151,14 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       build_version: ${{ steps.unity_builder.outputs.buildVersion }}
-    if: needs.check_gh_secrets.outputs.unity_license_exists == 'true' && needs.check_skip_commits.outputs.skip_build != 'true' && needs.check_skip_commits.outputs.skip_android != 'true' && needs.check_gh_secrets.outputs.android_keystore_base64_exists == 'true' && needs.check_gh_secrets.outputs.android_keystore_pass_exists == 'true' && needs.check_gh_secrets.outputs.android_keyalias_name_exists == 'true' && needs.check_gh_secrets.outputs.android_keyalias_pass_exists == 'true'
+    if: |
+      needs.check_gh_secrets.outputs.unity_license_exists == 'true' &&
+      needs.check_skip_commits.outputs.skip_build != 'true' &&
+      needs.check_skip_commits.outputs.skip_android != 'true' &&
+      needs.check_gh_secrets.outputs.android_keystore_base64_exists == 'true' &&
+      needs.check_gh_secrets.outputs.android_keystore_pass_exists == 'true' &&
+      needs.check_gh_secrets.outputs.android_keyalias_name_exists == 'true' &&
+      needs.check_gh_secrets.outputs.android_keyalias_pass_exists == 'true'
     steps:
       # This action checks-out your repository under $GITHUB_WORKSPACE, so your workflow can access it.
       - name: Checkout
@@ -194,7 +203,11 @@ jobs:
       # This action allows you to create badges for your README.md with shields.io which may change with every commit.
       - name: Update Build Status Badge
         id: update_build_status_badge
-        if: github.event_name == 'push' && needs.check_gh_secrets.outputs.gha_dynamic_badges_gist_id_exists == 'true' && needs.check_gh_secrets.outputs.gha_dynamic_badges_gist_scope_token_exists == 'true' && always()
+        if: |
+          github.event_name == 'push' &&
+          needs.check_gh_secrets.outputs.gha_dynamic_badges_gist_id_exists == 'true' &&
+          needs.check_gh_secrets.outputs.gha_dynamic_badges_gist_scope_token_exists == 'true' &&
+          always()
         uses: Schneegans/dynamic-badges-action@v1.0.0
         with:
           auth: ${{ secrets.GHA_DYNAMIC_BADGES_GIST_SCOPE_TOKEN }}
@@ -212,7 +225,10 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       build_version: ${{ steps.unity_builder.outputs.buildVersion }}
-    if: needs.check_gh_secrets.outputs.unity_license_exists == 'true' && needs.check_skip_commits.outputs.skip_build != 'true' && needs.check_skip_commits.outputs.skip_webgl != 'true'
+    if: |
+      needs.check_gh_secrets.outputs.unity_license_exists == 'true' &&
+      needs.check_skip_commits.outputs.skip_build != 'true' &&
+      needs.check_skip_commits.outputs.skip_webgl != 'true'
     steps:
       # This action checks-out your repository under $GITHUB_WORKSPACE, so your workflow can access it.
       - name: Checkout
@@ -252,7 +268,11 @@ jobs:
       # This action allows you to create badges for your README.md with shields.io which may change with every commit.
       - name: Update Build Status Badge
         id: update_build_status_badge
-        if: github.event_name == 'push' && needs.check_gh_secrets.outputs.gha_dynamic_badges_gist_id_exists == 'true' && needs.check_gh_secrets.outputs.gha_dynamic_badges_gist_scope_token_exists == 'true' && always()
+        if: |
+          github.event_name == 'push' &&
+          needs.check_gh_secrets.outputs.gha_dynamic_badges_gist_id_exists == 'true' &&
+          needs.check_gh_secrets.outputs.gha_dynamic_badges_gist_scope_token_exists == 'true' &&
+          always()
         uses: Schneegans/dynamic-badges-action@v1.0.0
         with:
           auth: ${{ secrets.GHA_DYNAMIC_BADGES_GIST_SCOPE_TOKEN }}
